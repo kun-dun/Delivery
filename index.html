@@ -31,24 +31,6 @@
       padding: 5px;
       box-sizing: border-box;
     }
-
-    /* Styles pour l'impression */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #editableTable, #editableTable * {
-        visibility: visible;
-      }
-      #editableTable {
-        width: 100%;
-        margin: auto;
-        font-size: 12px; /* Taille réduite pour l'impression */
-      }
-      button {
-        display: none; /* Masquer les boutons lors de l'impression */
-      }
-    }
   </style>
 </head>
 <body>
@@ -81,17 +63,21 @@
 
 <br>
 <button onclick="addRow()">Adicionar Linha</button>
-<button onclick="saveTable()">Salvar Tabela</button>
+<button onclick="saveToGitHub()">Salvar no GitHub</button>
 <button onclick="loadTable()">Carregar Tabela</button>
 <button onclick="printTable()">Imprimir Tabela (A4)</button>
 
 <script>
+  const GITHUB_TOKEN = "YOUR_GITHUB_TOKEN"; // Remplacez par votre token GitHub
+  const REPO_OWNER = "kun-dun"; // Remplacez par votre nom d'utilisateur GitHub
+  const REPO_NAME = "delivery"; // Remplacez par le nom de votre dépôt
+  const FILE_PATH = "data.json"; // Chemin du fichier JSON dans le dépôt
+
   // Fonction pour ajouter une nouvelle ligne au tableau
   function addRow() {
     const table = document.getElementById("editableTable").getElementsByTagName('tbody')[0];
     const newRow = table.insertRow();
 
-    // Ajouter des cellules avec des champs de saisie
     for (let i = 0; i < 6; i++) {
       const cell = newRow.insertCell();
       const input = document.createElement("input");
@@ -100,8 +86,8 @@
     }
   }
 
-  // Fonction pour sauvegarder le tableau au format JSON
-  function saveTable() {
+  // Fonction pour sauvegarder le tableau sur GitHub
+  async function saveToGitHub() {
     const table = document.getElementById("editableTable");
     const rows = table.getElementsByTagName("tbody")[0].rows;
     const data = [];
@@ -115,58 +101,74 @@
       data.push(rowData);
     }
 
-    // Convertir les données en JSON
     const jsonData = JSON.stringify(data, null, 2);
 
-    // Télécharger le fichier JSON
-    const blob = new Blob([jsonData], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "tabela.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      // Obtenir le SHA du fichier existant (nécessaire pour la mise à jour)
+      const fileResponse = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
+        {
+          headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+          },
+        }
+      );
+      const fileData = await fileResponse.json();
+      const sha = fileData.sha;
+
+      // Mettre à jour le fichier sur GitHub
+      await fetch(
+        `https://api.github.com/repos/${kun-dun}/${REPO_NAME}/contents/${FILE_PATH}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: "Atualizar dados da tabela",
+            content: btoa(jsonData), // Convertir en base64
+            sha: sha,
+          }),
+        }
+      );
+
+      alert("Dados salvos com sucesso no GitHub!");
+    } catch (error) {
+      console.error("Erro ao salvar no GitHub:", error);
+      alert("Erro ao salvar no GitHub. Verifique o console para mais detalhes.");
+    }
   }
 
   // Fonction pour charger un tableau depuis un fichier JSON
-  function loadTable() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
+  async function loadTable() {
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`
+      );
+      const fileData = await response.json();
+      const content = atob(fileData.content); // Décoder le contenu base64
+      const data = JSON.parse(content);
 
-    input.onchange = function (event) {
-      const file = event.target.files[0];
-      if (!file) return;
+      // Effacer le tableau actuel
+      const tbody = document.getElementById("editableTable").getElementsByTagName("tbody")[0];
+      tbody.innerHTML = "";
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const content = e.target.result;
-        try {
-          const data = JSON.parse(content);
-
-          // Effacer le tableau actuel
-          const tbody = document.getElementById("editableTable").getElementsByTagName("tbody")[0];
-          tbody.innerHTML = "";
-
-          // Remplir le tableau avec les données chargées
-          for (let rowData of data) {
-            const newRow = tbody.insertRow();
-            for (let cellData of rowData) {
-              const cell = newRow.insertCell();
-              const input = document.createElement("input");
-              input.type = "text";
-              input.value = cellData;
-              cell.appendChild(input);
-            }
-          }
-        } catch (error) {
-          alert("Erro ao carregar o arquivo JSON. Verifique o formato do arquivo.");
+      // Remplir le tableau avec les données chargées
+      for (let rowData of data) {
+        const newRow = tbody.insertRow();
+        for (let cellData of rowData) {
+          const cell = newRow.insertCell();
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = cellData;
+          cell.appendChild(input);
         }
-      };
-      reader.readAsText(file);
-    };
-
-    input.click();
+      }
+    } catch (error) {
+      console.error("Erro ao carregar do GitHub:", error);
+      alert("Erro ao carregar do GitHub. Verifique o console para mais detalhes.");
+    }
   }
 
   // Fonction pour imprimer le tableau en A4
