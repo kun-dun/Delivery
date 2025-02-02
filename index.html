@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle Delivery</title>
+  <style>
+    /* Styles généraux */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    input[type="text"] {
+      width: 90%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    /* Styles pour l'impression */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #editableTable, #editableTable * {
+        visibility: visible;
+      }
+      #editableTable {
+        width: 100%;
+        margin: auto;
+        font-size: 12px; /* Taille réduite pour l'impression */
+      }
+      button {
+        display: none; /* Masquer les boutons lors de l'impression */
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Controle Delivery</h1>
+
+<table id="editableTable">
+  <thead>
+    <tr>
+      <th>Hotel/Endereço</th>
+      <th>Contato</th>
+      <th>Venda/Prato</th>
+      <th>Data</th>
+      <th>Valor</th>
+      <th>A Pagar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Lignes initiales -->
+    <tr>
+      <td><input type="text" value="Hotel Praia Sol"></td>
+      <td><input type="text" value="(11) 9999-9999"></td>
+      <td><input type="text" value="Prato Executivo"></td>
+      <td><input type="text" value="10/10/2023"></td>
+      <td><input type="text" value="R$ 50,00"></td>
+      <td><input type="text" value="R$ 50,00"></td>
+    </tr>
+  </tbody>
+</table>
+
+<br>
+<button onclick="addRow()">Adicionar Linha</button>
+<button onclick="saveTable()">Salvar Tabela</button>
+<button onclick="loadTable()">Carregar Tabela</button>
+<button onclick="printTable()">Imprimir Tabela (A4)</button>
+
+<script>
+  // Fonction pour ajouter une nouvelle ligne au tableau
+  function addRow() {
+    const table = document.getElementById("editableTable").getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+
+    // Ajouter des cellules avec des champs de saisie
+    for (let i = 0; i < 6; i++) {
+      const cell = newRow.insertCell();
+      const input = document.createElement("input");
+      input.type = "text";
+      cell.appendChild(input);
+    }
+  }
+
+  // Fonction pour sauvegarder le tableau au format JSON
+  function saveTable() {
+    const table = document.getElementById("editableTable");
+    const rows = table.getElementsByTagName("tbody")[0].rows;
+    const data = [];
+
+    for (let row of rows) {
+      const rowData = [];
+      const inputs = row.querySelectorAll("input");
+      for (let input of inputs) {
+        rowData.push(input.value);
+      }
+      data.push(rowData);
+    }
+
+    // Convertir les données en JSON
+    const jsonData = JSON.stringify(data, null, 2);
+
+    // Télécharger le fichier JSON
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tabela.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Fonction pour charger un tableau depuis un fichier JSON
+  function loadTable() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const content = e.target.result;
+        try {
+          const data = JSON.parse(content);
+
+          // Effacer le tableau actuel
+          const tbody = document.getElementById("editableTable").getElementsByTagName("tbody")[0];
+          tbody.innerHTML = "";
+
+          // Remplir le tableau avec les données chargées
+          for (let rowData of data) {
+            const newRow = tbody.insertRow();
+            for (let cellData of rowData) {
+              const cell = newRow.insertCell();
+              const input = document.createElement("input");
+              input.type = "text";
+              input.value = cellData;
+              cell.appendChild(input);
+            }
+          }
+        } catch (error) {
+          alert("Erro ao carregar o arquivo JSON. Verifique o formato do arquivo.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    input.click();
+  }
+
+  // Fonction pour imprimer le tableau en A4
+  function printTable() {
+    window.print();
+  }
+</script>
+
+</body>
+</html>
