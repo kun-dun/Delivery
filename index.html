@@ -113,7 +113,7 @@
 
       // Mettre à jour le fichier sur GitHub
       await fetch(
-        `https://api.github.com/repos/${kun-dun}/${REPO_NAME}/contents/${FILE_PATH}`,
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
         {
           method: "PUT",
           headers: {
