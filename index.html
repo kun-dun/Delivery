@@ -106,12 +106,7 @@
     try {
       // Obtenir le SHA du fichier existant (nécessaire pour la mise à jour)
       const fileResponse = await fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
-        {
-          headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
-          },
-        }
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`
       );
       const fileData = await fileResponse.json();
       const sha = fileData.sha;
@@ -122,8 +117,7 @@
         {
           method: "PUT",
           headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
-            "Content-Type": "application/json",
+             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             message: "Atualizar dados da tabela",
